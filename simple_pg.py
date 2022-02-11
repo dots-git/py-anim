@@ -160,7 +160,13 @@ def rectangle(x: 'float | int', y: 'float | int', width: 'float | int', height: 
     if surface is None:
         surface = pygame.display.get_surface()
     rect = pygame.Rect(x, y, width, height)
-    pygame.draw.rect(surface, color, rect, outline)
+    if len(color) > 3:
+        rect_surface = pygame.Surface((width, height))
+        rect_surface.fill(color[0:3])
+        rect_surface.set_alpha(color[3])
+        surface.blit(rect_surface, (x, y))
+    else:
+        pygame.draw.rect(surface, color, rect, outline)
 
 def rounded_rectangle(x: 'float | int', y: 'float | int', width: 'float | int', height: 'float | int', color, radius: 'float | int', surface: pygame.Surface = None):
     '''

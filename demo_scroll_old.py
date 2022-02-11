@@ -1,10 +1,8 @@
-from calendar import c
-from math import dist
-from tkinter.tix import Tree
 from simple_pg import *
 from py_anim import *
-from py_anim import _circular_exponential
-
+'''
+TODO: Make this better, little less messy
+'''
 def init():
     global pos, moving_offset, colliding
 
@@ -54,7 +52,7 @@ def tick(delta):
             pos[1] = height() - 50
             colliding = True
         pos.loose = not colliding
-        pos.drag = 2.3 if not colliding else 2
+        pos.drag = 2.3 if not colliding else 2.3
         if colliding and not colliding_last_tick:
             pos.acceleration = (abs(pos.change[1]) + collision_offset + 1) * 0.0018
 
