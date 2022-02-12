@@ -1,6 +1,8 @@
 from py_anim import *
 from simple_pg import *
-
+'''
+An example for how an image viewing interface might look with this library
+'''
 def avg_finger_pos():
     avg = np.array([0, 0])
     for key in touches.keys():

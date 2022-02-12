@@ -1,7 +1,7 @@
 from simple_pg import *
 from py_anim import *
 '''
-TODO: Make this better, little less messy
+Just a prototype, but feels kinda nice
 '''
 def init():
     global pos, moving_offset, colliding
