@@ -1,5 +1,3 @@
-from glob import glob
-from turtle import pos
 from simple_pg import *
 from py_anim import *
 
@@ -9,7 +7,7 @@ Demo for showing the way changes in direction are handled specifically
 
 def init():
     global position, w, h
-    position = AnimVec([0, 0], acceleration=15, drag=7)
+    position = AnimVec([400, 400], acceleration=600, acceleration_modifier=1.3, drag=3)
     w = 100
     h = 100
 

@@ -9,8 +9,30 @@ def approx(a, b, variance):
 def moving_toward(value, change_rate, drag):
     return value - change_rate / math.log(drag)
 
+def _animate_value(value, change_rate, target, acceleration, acceleration_modifier, drag, delta_time):
+    moving_twd = moving_toward(value, change_rate, drag)
+    if moving_twd < target - 0.01:
+        change_rate
+        # Calculate animation progress
+        progress = np.sign(change_rate) * np.power(abs(change_rate) / (acceleration_modifier + 1), 1 / acceleration_modifier)
+        # Increment animation progress by delta time
+        progress += delta_time * acceleration
+        # Calculate new change rate
+        change_rate = np.sign(progress) * (acceleration_modifier + 1) * np.power(abs(progress), acceleration_modifier)
+        
+        if moving_toward(value, change_rate, drag) > target:
+            change_rate = (value - target) * math.log(drag)
+        
+        if value + change_rate * delta_time > target:
+            change_rate = (target - value) / delta_time
+    else:
+        if target + change_rate > moving_twd > target:
+            change_rate = (value - target) * math.log(drag)
+        change_rate *= drag**delta_time
+    return change_rate
+
 # animate with circular growth, then exponential decay
-def _circular_exponential(value, change_rate, target, acceleration, acceleration_modifier, drag, delta_time):
+def _animate_deprecated(value, change_rate, target, acceleration, acceleration_modifier, drag, delta_time):
     moving_twd = moving_toward(value, change_rate, drag)
     
     # Accelerate if change_rate is too small
@@ -43,7 +65,7 @@ class AnimVec(Sequence):
     A vector of values that will be animated uniformly to allow
     animating multiple attributes with different target values in unison
     '''
-    def __init__(self, vector: _array_like.ArrayLike = None, length: _scalars._IntLike_co = 1, acceleration: _scalars._FloatLike_co = 1, acceleration_modifier: _scalars._FloatLike_co = 1000, drag: _scalars._FloatLike_co = 1):
+    def __init__(self, vector: _array_like.ArrayLike = None, length: _scalars._IntLike_co = 1, acceleration: _scalars._FloatLike_co = 100, acceleration_modifier: _scalars._FloatLike_co = 1.3, drag: _scalars._FloatLike_co = 1):
         '''
         :attr vector: Initial vector to be used
         :attr length: Length of the vector to create if no vector is defined. Defaults to 1
@@ -60,6 +82,7 @@ class AnimVec(Sequence):
         self._loose: bool = False
 
         self._record_change = True
+        self.keep_velocity: bool = False
 
         self._acceleration = 0.
         self._acceleration_modifier = 0.
@@ -78,7 +101,7 @@ class AnimVec(Sequence):
             else:
                 difference_vector: np.ndarray = self._target - self._values
                 distance = np.sqrt(difference_vector.dot(difference_vector))
-                if distance == 0: distance = 10e-255
+                if distance == 0: distance = 10e-100
 
                 # Get the component of the change rate in the direction of the difference vector
                 c_dot_d = self._change.dot(difference_vector)
@@ -88,9 +111,9 @@ class AnimVec(Sequence):
                 num     = c_dot_d * abs(c_dot_d)
                 den     = d_dot_d * abs_c
                 change  = num / den if den != 0 else 0
-
+                
                 # Animate the change vector's value
-                change = _circular_exponential(0, change, distance, self._acceleration, self._acceleration_modifier, self._drag, delta)
+                change = _animate_value(0, change, distance, self._acceleration, self._acceleration_modifier, self._drag, delta)
 
                 # Apply the change rate to the normalized difference vector
                 self._change = change * difference_vector / distance
@@ -103,7 +126,7 @@ class AnimVec(Sequence):
                 b = b / (a + b)
 
                 new_change = (self._target - self._values) / delta
-                if new_change.dot(new_change) > self._change.dot(self.change):
+                if new_change.dot(new_change) > self._change.dot(self._change):
                     self._change = new_change
                 else:
                     self._change = self._change * a + new_change * b
@@ -125,6 +148,13 @@ class AnimVec(Sequence):
             self._change[np.abs(self._change) > value] = value
         else:
             if self.change[i] > value: self._change[i] = i
+
+    def get_axis_from(self, source: 'AnimVec', axis, source_axis = None):
+        if source_axis is None:
+            source_axis = axis
+        self._change[axis] = source._change[source_axis].copy()
+        self._values[axis] = source._values[source_axis].copy()
+        self._target[axis] = source._target[source_axis].copy()
 
 # Setters and Getters
     @property
@@ -190,6 +220,10 @@ class AnimVec(Sequence):
     @property
     def change(self):
         return self._change
+    
+    @change.setter
+    def change(self, value: _scalars._FloatLike_co):
+        self._change = np.array(value)
 
     def __getitem__(self, i):
         return self._values[i]
@@ -199,3 +233,6 @@ class AnimVec(Sequence):
 
     def __len__(self):
         return self._values.shape[0]
+    
+    def __str__(self):
+        return 'Values:  ' + str(self._values) + '\nTarget:  ' + str(self._target) + '\nChange:  ' + str(self._change) + '\nAnimate: ' + str(self._animate) + '\nLoose:   ' + str(self._loose)

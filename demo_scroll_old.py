@@ -6,7 +6,7 @@ TODO: Make this better, little less messy
 def init():
     global pos, moving_offset, colliding
 
-    pos = AnimVec(length=2, acceleration=2, acceleration_modifier=5000, drag=2)
+    pos = AnimVec(length=2, acceleration=200, acceleration_modifier=1.4, drag=2)
     pos.loose = True
     moving_offset = None
     colliding = False
@@ -54,7 +54,7 @@ def tick(delta):
         pos.loose = not colliding
         pos.drag = 2.3 if not colliding else 2.3
         if colliding and not colliding_last_tick:
-            pos.acceleration = (abs(pos.change[1]) + collision_offset + 1) * 0.0018
+            pos.acceleration = (abs(pos.change[1]) + abs(collision_offset) + 1) * 0.5 + 50
 
 def draw():
     rectangle(pos[0] - 50, pos[1] - height() + 50, 500, 2 * height() - 100, (0, 0, 0))

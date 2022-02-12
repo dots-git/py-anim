@@ -14,7 +14,7 @@ def rect_from_pos(pos1, pos2):
 
 def init():
     global rect, pos1, pos2
-    rect = AnimVec([0, 0, width(), height()], acceleration=15, drag=7)
+    rect = AnimVec([0, 0, width(), height()], acceleration=3000, acceleration_modifier=1.2, drag=6)
     # rect[0:4] = [width() / 2 - 50, height() / 2 - 50, 100, 100]
     rect[0:4] = [0, 0, 0, height()]
     pos1 = (0, 0)
