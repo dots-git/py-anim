@@ -6,7 +6,7 @@ As used in debugging. Good visualization of the animation curve
 def init():
     global value, target, points, deltas, point_distance, paused
 
-    value = AnimVec([0], acceleration=300, acceleration_modifier=1.5, drag=2)
+    value = AnimVec([0], acceleration=700, acceleration_modifier=1.2, drag=2)
     target = AnimVec([0], acceleration=4000, acceleration_modifier=1.5, drag=12)
     points = []
     deltas = []

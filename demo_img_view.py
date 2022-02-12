@@ -1,7 +1,8 @@
+# %%
 from py_anim import *
 from simple_pg import *
 '''
-An example for how an image viewing interface might look with this library
+An example for how an image viewing interface might look with this library (Currently requires touch input)
 '''
 def avg_finger_pos():
     avg = np.array([0, 0])
@@ -24,8 +25,8 @@ def avg_finger_dist():
 def init():
     global x, y, on_edge_l, on_side_l, original_surface, surface, moving_offset, touches, scale, starting_scale, scale_last_tick, smoothscaled
     # Create the independent vectors for x and y position as well as the one for xy position, that will by used in the corners
-    x  = AnimVec(acceleration=2000, acceleration_modifier=1.4, drag=2.3)
-    y  = AnimVec(acceleration=2000, acceleration_modifier=1.4, drag=2.3)
+    x  = AnimVec(acceleration=2000, acceleration_modifier=1.3, drag=2.)
+    y  = AnimVec(acceleration=2000, acceleration_modifier=1.3, drag=2.)
     # Create the variable that keeps track of whether the image is outside the bounds on both axes
     touches = {}
     on_edge_l, on_side_l = False, False
@@ -33,7 +34,7 @@ def init():
     moving_offset = None
     starting_scale = None
     # Load in and upscale the image
-    original_surface = pygame.image.load('./demo_scroll.png')
+    original_surface = pygame.image.load('./demo_img.png')
     scale = 1
     scale_last_tick = scale
     smoothscaled = True
@@ -136,3 +137,4 @@ def draw():
     scale_last_tick = scale
 
 go(init, events, tick, draw)
+# %%
