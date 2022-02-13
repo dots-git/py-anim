@@ -57,8 +57,23 @@ def events(event):
             mouse_pos = pygame.mouse.get_pos()
             factor = np.exp(event.x * 0.05) * np.exp(event.y * 0.05)
             scale *= factor
-            # x[0] = mouse_pos[0] - (mouse_pos[0] - x[0]) * factor
-            # y[0] = mouse_pos[1] - (mouse_pos[1] - y[0]) * factor
+            x.animate = False
+            y.animate = False
+            print('')
+            x_offset = (mouse_pos[0] - x[0])
+            y_offset = (mouse_pos[1] - y[0])
+            print(x[0], ' ', y[0], ' ', x_offset, ' ', y_offset)
+            x_offset *= factor
+            y_offset *= factor
+            print(x[0], ' ', y[0], ' ', x_offset, ' ', y_offset)
+            x_pos = mouse_pos[0] - x_offset
+            y_pos = mouse_pos[1] - y_offset
+            print(x_pos, ' ', y_pos)
+            x[0] = x_pos
+            y[0] = y_pos
+            x.jump()
+            y.jump()
+            print(x[0], ' ', y[0])
     if event.type == pygame.FINGERDOWN:
         touches[event.finger_id] = np.asarray([event.x * width(), event.y * height()])
         pos = avg_finger_pos()
