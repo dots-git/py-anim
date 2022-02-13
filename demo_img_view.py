@@ -1,9 +1,11 @@
 # %%
 from py_anim import *
 from simple_pg import *
+import os
 '''
-An example for how an image viewing interface might look with this library (Currently requires touch input, for windows, run $env:SDL_MOUSE_TOUCH_EVENTS = 1 to use with mouse)
+An example for how an image viewing interface might look with this library (best with touch input)
 '''
+os.environ['SDL_MOUSE_TOUCH_EVENTS'] = '1'
 def avg_finger_pos():
     avg = np.array([0, 0])
     for key in touches.keys():
@@ -23,13 +25,13 @@ def avg_finger_dist():
     return avg / elements if elements > 0 else avg
 
 def init():
-    global x, y, on_edge_l, on_side_l, original_surface, surface, moving_offset, touches, scale, starting_scale, scale_last_tick, smoothscaled
+    global x, y, on_edge_x_l, on_edge_y_l, original_surface, surface, moving_offset, touches, scale, starting_scale, scale_last_tick, smoothscaled
     # Create the independent vectors for x and y position as well as the one for xy position, that will by used in the corners
     x  = AnimVec(acceleration=2000, acceleration_modifier=1.3, drag=2.)
     y  = AnimVec(acceleration=2000, acceleration_modifier=1.3, drag=2.)
     # Create the variable that keeps track of whether the image is outside the bounds on both axes
     touches = {}
-    on_edge_l, on_side_l = False, False
+    on_edge_x_l, on_edge_y_l = False, False
 
     moving_offset = None
     starting_scale = None
@@ -42,7 +44,7 @@ def init():
     config.scroll_step = 500
 
 def events(event):
-    global moving_offset, starting_scale, scale, on_edge_l
+    global moving_offset, starting_scale, scale, on_edge_x_l, on_edge_y_l
     
     if event.type == pygame.MOUSEWHEEL:
         print(event.x, event.y)
@@ -64,13 +66,17 @@ def events(event):
             mouse_pos = pygame.mouse.get_pos()
             factor = np.exp(event.x * 0.05) * np.exp(event.y * 0.05)
             scale *= factor
-            x.animate = False
-            y.animate = False
-            x[0] = mouse_pos[0] - (mouse_pos[0] - x[0]) * factor
-            y[0] = mouse_pos[1] - (mouse_pos[1] - y[0]) * factor
-            x.jump()
-            y.jump()
-        on_edge_l = False
+            if scale > width()  / 3: scale = width() / 3
+            elif scale > height() / 3: scale = height() / 3
+            else:
+                x.animate = False
+                y.animate = False
+                x[0] = mouse_pos[0] - (mouse_pos[0] - x[0]) * factor
+                y[0] = mouse_pos[1] - (mouse_pos[1] - y[0]) * factor
+                x.jump()
+                y.jump()
+        on_edge_x_l = False
+        on_edge_y_l = False
     if event.type == pygame.FINGERDOWN:
         touches[event.finger_id] = np.asarray([event.x * width(), event.y * height()])
         pos = avg_finger_pos()
@@ -78,6 +84,8 @@ def events(event):
         moving_offset = np.asarray([pos[0] - x[0], pos[1] - y[0]]) / scale
         if len(touches) >= 2:
             starting_scale = avg_finger_dist() / scale
+            if scale > width()  / 3: scale = width() / 3
+            if scale > height() / 3: scale = height() / 3
     if event.type == pygame.FINGERUP:
         touches.pop(event.finger_id, None)
         pos = avg_finger_pos()
@@ -113,19 +121,19 @@ def events(event):
     #         touches['mouse' + str(event.button)] = np.asarray([event.pos[0] * width(), event.pos[1] * height()])
 
 def tick(delta):
-    global x, y, on_edge_l, scale
+    global x, y, on_edge_x_l, on_edge_y_l, scale
 
     if len(touches) == 0:
         x.drag = 2
         y.drag = 2
         # Check if x or y is outside the bounds
-        on_edge = False
-        if surface.get_width() > width():
+        if original_surface.get_width() * scale > width():
             x_offset = 0
+            on_edge = False
             if x[0] > 0 and x.target[0] >= 0:
                 x_offset = x[0]
-            if x[0] + surface.get_width() < width() and x.target[0] + surface.get_width() <= width():
-                x_offset = x[0] + surface.get_width() - width()
+            if x[0] + original_surface.get_width() * scale < width() and x.target[0] + original_surface.get_width() * scale <= width():
+                x_offset = x[0] + original_surface.get_width() * scale - width()
             if x_offset != 0: on_edge = True
 
             x.animate = True
@@ -135,16 +143,23 @@ def tick(delta):
                 x.drag = 3
 
             if x_offset < 0:
-                x[0] = width() - surface.get_width()
+                x[0] = width() - original_surface.get_width() * scale
             if x_offset > 0:
                 x[0] = 0
 
-        if surface.get_height() > height():
+            if on_edge and not on_edge_x_l:
+                change = abs(x.change[0])
+                acceleration = (x_offset + change) * 0.6 + 1
+                x.acceleration = acceleration
+            on_edge_x_l = on_edge
+
+        if original_surface.get_height() * scale > height():
             y_offset = 0
+            on_edge = False
             if y[0] > 0 and y.target[0] >= 0:
                 y_offset = y[0]
-            if y[0] + surface.get_height() < height() and y.target[0] + surface.get_height() <= height():
-                y_offset = y[0] + surface.get_height() - height()
+            if y[0] + original_surface.get_height() * scale < height() and y.target[0] + original_surface.get_height() * scale <= height():
+                y_offset = y[0] + original_surface.get_height() * scale - height()
 
             y.animate = True
 
@@ -153,25 +168,27 @@ def tick(delta):
                 y.drag = 3
             
             if y_offset < 0:
-                y[0] = height() - surface.get_height()
+                y[0] = height() - original_surface.get_height() * scale
             if y_offset > 0:
                 y[0] = 0
+
+            if on_edge and not on_edge_y_l:
+                change = abs(y.change[0])
+                acceleration = (y_offset + change) * 0.6 + 1
+                y.acceleration = acceleration
+            on_edge_y_l = on_edge
         
-        if on_edge and not on_edge_l:
-            change = np.array([x.change[0], y.change[0]])
-            acceleration = (np.sqrt((x_offset)**2 + (y_offset)**2) + np.sqrt(change.dot(change))) * 0.6 + 1
-            x.acceleration = acceleration
-            y.acceleration = acceleration
-        on_edge_l = on_edge
     else:
         if len(touches) >= 2:
             scale = avg_finger_dist() / starting_scale
+            if scale > width()  / 3: scale = width() / 3
+            if scale > height() / 3: scale = height() / 3
         
         pos = avg_finger_pos() - moving_offset * scale
         
         x[0] = pos[0]
         y[0] = pos[1]
-        on_edge_l = False
+        on_edge_x_l = False
 
     # Animate the values
     x.tick(delta)
@@ -180,22 +197,20 @@ def tick(delta):
     y.loose = True
 
 def draw():
-    global surface, scale_last_tick, smoothscaled
-    if scale_last_tick != scale:
-        surface = pygame.transform.scale(original_surface, (original_surface.get_width() * scale, original_surface.get_height() * scale))
-        smoothscaled = False
-    elif not smoothscaled:
-        smooth_limit = 6
-        if scale < smooth_limit:
-            surface = pygame.transform.smoothscale(original_surface, (original_surface.get_width() * scale, original_surface.get_height() * scale))
-        else:
-            # surface = pygame.transform.smoothscale(original_surface, (original_surface.get_width() * smooth_limit, original_surface.get_height() * smooth_limit))
-            # surface = pygame.transform.scale(surface, (surface.get_width() * scale / smooth_limit, surface.get_height() * scale / smooth_limit))
-            surface = pygame.transform.scale(original_surface, (original_surface.get_width() * scale, original_surface.get_height() * scale))
+    global surface, scale_last_tick, smoothscaled, scale
+    
+    in_x = x[0] / scale
+    in_y = y[0] / scale
+    if in_x < 1: in_x -= 1
+    if in_y < 1: in_y -= 1
+    visible_rect = pygame.Rect(in_x, in_y, width() / scale + 2, height() / scale + 2)
 
-        smoothscaled = True
+    surface = pygame.Surface((visible_rect.width, visible_rect.height))
+    surface.fill(WHITE)
+    surface.blit(original_surface, visible_rect)
+    surface = pygame.transform.smoothscale(surface, (surface.get_width() * scale, surface.get_height() * scale))
 
-    image(x[0], y[0], surface)
+    image((x[0] / scale % 1 - 1) * scale, (y[0] / scale % 1 - 1) * scale, surface)
     scale_last_tick = scale
 
 go(init, events, tick, draw)
