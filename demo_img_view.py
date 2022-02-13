@@ -2,7 +2,7 @@
 from py_anim import *
 from simple_pg import *
 '''
-An example for how an image viewing interface might look with this library (Currently requires touch input)
+An example for how an image viewing interface might look with this library (Currently requires touch input, for windows, run $env:SDL_MOUSE_TOUCH_EVENTS = 1 to use with mouse)
 '''
 def avg_finger_pos():
     avg = np.array([0, 0])
@@ -39,10 +39,21 @@ def init():
     scale_last_tick = scale
     smoothscaled = True
     surface = original_surface.copy()
+    
 
 def events(event):
-    global moving_offset, starting_scale
+    global moving_offset, starting_scale, scale
     
+    if event.type == pygame.MOUSEWHEEL:
+        if not pygame.key.get_pressed()[pygame.K_LCTRL]:
+            x.loose = False
+            x._change[0] = -event.x * 500
+            x._values[0] -= np.sign(event.x)
+            y.loose = False
+            y._change[0] = event.y * 500
+            y._values[0] += np.sign(event.y)
+        else:
+            scale *= np.exp(event.x * 0.05) * np.exp(event.y * 0.05)
     if event.type == pygame.FINGERDOWN:
         touches[event.finger_id] = np.asarray([event.x * width(), event.y * height()])
         pos = avg_finger_pos()
@@ -61,6 +72,28 @@ def events(event):
             y.animate = False
     if event.type == pygame.FINGERMOTION:
         touches[event.finger_id] = np.asarray([event.x * width(), event.y * height()])
+    
+    # if event.type == pygame.MOUSEBUTTONDOWN:
+    #     if event.button == pygame.BUTTON_LEFT:
+    #         touches['mouse'] = np.asarray([event.pos[0] * width(), event.pos[1] * height()])
+    #         pos = avg_finger_pos()
+    #         x.animate, y.animate = False, False
+    #         moving_offset = np.asarray([pos[0] - x[0], pos[1] - y[0]]) / scale
+    #         if len(touches) >= 2:
+    #             starting_scale = avg_finger_dist() / scale
+    # if event.type == pygame.MOUSEBUTTONUP:
+    #     if event.button == pygame.BUTTON_LEFT:
+    #         touches.pop('mouse', None)
+    #         pos = avg_finger_pos()
+    #         moving_offset = np.asarray([pos[0] - x[0], pos[1] - y[0]]) / scale
+    #         if len(touches) >= 2:
+    #             starting_scale = avg_finger_dist() / scale
+    #         if len(touches) == 1:
+    #             x.animate = False
+    #             y.animate = False
+    # if event.type == pygame.MOUSEMOTION:
+    #     if pygame.mouse.get_pressed()[pygame.BUTTON_LEFT]:
+    #         touches['mouse' + str(event.button)] = np.asarray([event.pos[0] * width(), event.pos[1] * height()])
 
 def tick(delta):
     global x, y, on_edge_l, scale
@@ -68,6 +101,8 @@ def tick(delta):
     if len(touches) == 0:
         x.loose = True
         y.loose = True
+        x.drag = 2
+        y.drag = 2
         # Check if x or y is outside the bounds
         x_offset = 0
         y_offset = 0
@@ -85,14 +120,16 @@ def tick(delta):
         y.animate = True
         if on_edge and not on_edge_l:
             change = np.array([x.change[0], y.change[0]])
-            acceleration = (np.sqrt((x_offset)**2 + (y_offset)**2) + np.sqrt(change.dot(change))) * 0.7 + 1
+            acceleration = (np.sqrt((x_offset)**2 + (y_offset)**2) + np.sqrt(change.dot(change))) * 0.6 + 1
             x.acceleration = acceleration
             y.acceleration = acceleration
 
         if x_offset != 0:
             x.loose = False
+            x.drag = 3
         if y_offset != 0:
             y.loose = False
+            y.drag = 3
         if x_offset < 0:
             x[0] = width() - surface.get_width()
         if x_offset > 0:
@@ -105,7 +142,6 @@ def tick(delta):
     else:
         if len(touches) >= 2:
             scale = avg_finger_dist() / starting_scale
-            print(scale)
         
         pos = avg_finger_pos() - moving_offset * scale
         
@@ -114,8 +150,8 @@ def tick(delta):
         on_edge_l = False
 
     # Animate the values
-    x .tick(delta)
-    y .tick(delta)
+    x.tick(delta)
+    y.tick(delta)
 
 def draw():
     global surface, scale_last_tick, smoothscaled
