@@ -317,7 +317,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 
-class win_config():
+class config():
     max_fps = 0
     min_delta = 0
     background_color = WHITE
@@ -327,16 +327,16 @@ class win_config():
     @staticmethod
     def set_max_fps(value):
         ''' Change the FPS limit. Exists to save resources '''
-        win_config.max_fps = value
-        win_config.min_delta = 1 / win_config.max_fps
-        win_config.just_updated = True
+        config.max_fps = value
+        config.min_delta = 1 / config.max_fps
+        config.just_updated = True
     
     @staticmethod
     def set_fps_update_interval(value):
         ''' Change the FPS update interval. Makes FPS displays more readable '''
-        win_config.fps_update_interval = value
+        config.fps_update_interval = value
 
-win_config.set_max_fps(65)
+config.set_max_fps(65)
 
 def go(init_func = init, events_fuc = events, tick_func = tick, draw_func = draw, width = 1000, height = 600, name = 'New Project'):
     ''' Start the game loop '''
@@ -353,9 +353,9 @@ def go(init_func = init, events_fuc = events, tick_func = tick, draw_func = draw
 
     current_time = time.time()
     time_last_frame = current_time
-    delta = win_config.min_delta
+    delta = config.min_delta
     delta_list = []
-    fps_display_update_time = win_config.fps_update_interval
+    fps_display_update_time = config.fps_update_interval
 
     init_func()
     running = True
@@ -370,7 +370,7 @@ def go(init_func = init, events_fuc = events, tick_func = tick, draw_func = draw
 
         tick_func(delta)
 
-        screen.fill(win_config.background_color)
+        screen.fill(config.background_color)
 
         draw_func()
         
@@ -378,8 +378,8 @@ def go(init_func = init, events_fuc = events, tick_func = tick, draw_func = draw
 
         current_time = time.time()
         delta = current_time - time_last_frame
-        if delta < win_config.min_delta:
-            time.sleep(win_config.min_delta - delta)
+        if delta < config.min_delta:
+            time.sleep(config.min_delta - delta)
             current_time = time.time()
             delta = current_time - time_last_frame
         time_last_frame = current_time
@@ -393,8 +393,8 @@ def go(init_func = init, events_fuc = events, tick_func = tick, draw_func = draw
 
         if fps_display_update_time < 0:
             print("Fps: %i (Min: %i, Max: %i)" % (len(delta_list)/sum(delta_list), 1/max(delta_list), 1/min(delta_list)))
-            win_config.curr_fps = 1 / delta
+            config.curr_fps = 1 / delta
             delta_list = []
-            fps_display_update_time = win_config.fps_update_interval
+            fps_display_update_time = config.fps_update_interval
 
     pygame.quit()
